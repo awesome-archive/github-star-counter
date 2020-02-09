@@ -1,6 +1,7 @@
 use super::*;
 use pretty_assertions::assert_eq;
 use serde_json;
+use std::path::PathBuf;
 
 static USERNAME: &str = "Byron";
 static USER_JSON: &str = include_str!("../test/fixtures/github.com-byron.json");
@@ -8,6 +9,7 @@ static PAGE1_JSON: &str = include_str!("../test/fixtures/github.com-byron-repos-
 static USER_OUTPUT: &str = include_str!("../test/fixtures/github.com-byron-output.txt");
 static USER_OUTPUT_THRESHOLD_30: &str =
     include_str!("../test/fixtures/github.com-byron-output-threshold-30.txt");
+static TEMPLATE_OUTPUT: &str = include_str!("../test/fixtures/template_output.md");
 
 lazy_static! {
     static ref USER: User = serde_json::from_str(USER_JSON).unwrap();
@@ -15,18 +17,27 @@ lazy_static! {
 }
 #[test]
 fn output_repos() {
-    let mut buf = Vec::new();
-    output(USERNAME, REPOS.clone(), 10, 0, &mut buf).unwrap();
-
-    assert_eq!(String::from_utf8(buf).unwrap(), USER_OUTPUT);
+    let output = render_output(None, REPOS.clone(), USERNAME.to_string(), 10, 0).unwrap();
+    assert_eq!(output, USER_OUTPUT);
 }
 
 #[test]
 fn output_repos_with_threshold() {
-    let mut buf = Vec::new();
-    output(USERNAME, REPOS.clone(), 10, 30, &mut buf).unwrap();
+    let output = render_output(None, REPOS.clone(), USERNAME.to_string(), 10, 30).unwrap();
+    assert_eq!(output, USER_OUTPUT_THRESHOLD_30);
+}
 
-    assert_eq!(String::from_utf8(buf).unwrap(), USER_OUTPUT_THRESHOLD_30);
+#[test]
+fn output_repos_with_custom_template() {
+    let output = render_output(
+        Some(PathBuf::from("test/fixtures/template.md")),
+        REPOS.clone(),
+        USERNAME.to_string(),
+        10,
+        30,
+    )
+    .unwrap();
+    assert_eq!(output, TEMPLATE_OUTPUT);
 }
 
 #[tokio::test]
